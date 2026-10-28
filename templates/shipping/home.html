@@ -1,0 +1,55 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Boxwise | Shipping recommendation</title>
+  <style>
+    :root{color-scheme:light;--ink:#172b36;--muted:#63757d;--accent:#087f70;--line:#dce6e4;--wash:#f2f7f5}
+    *{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+    header{background:#123d3a;color:#fff;padding:22px max(24px,calc((100% - 1080px)/2));display:flex;justify-content:space-between;align-items:center}
+    .brand{font-weight:750;letter-spacing:.03em}.admin{color:#d1e8e2;text-decoration:none;font-size:.92rem}
+    main{max-width:1080px;margin:52px auto;padding:0 24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,.78fr);gap:36px;align-items:start}
+    h1{font-size:clamp(2rem,4vw,3rem);line-height:1.1;margin:12px 0}.eyebrow{color:var(--accent);font-size:.78rem;font-weight:750;text-transform:uppercase;letter-spacing:.12em}
+    .intro{color:var(--muted);max-width:590px;margin-bottom:28px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:0 12px 35px #173e3610}
+    h2{font-size:1.2rem;margin:0 0 16px}.helptext{color:var(--muted);font-size:.88rem}.field{margin:18px 0}.field label{font-weight:650}.options{display:grid;gap:10px;margin-top:10px}.options label{font-weight:450;padding:11px 13px;border:1px solid var(--line);border-radius:9px;display:flex;gap:10px;align-items:center}
+    input[type=number]{width:100%;margin-top:8px;padding:11px;border:1px solid #bacbc7;border-radius:8px;font:inherit}button{border:0;background:var(--accent);color:#fff;border-radius:9px;padding:13px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%}button:hover{background:#06685c}
+    .errorlist,.messages{padding:12px 15px;border-radius:9px;background:#fff0e9;color:#883f1b}.result{border-top:4px solid var(--accent)}.result p{color:var(--muted)}.price{font-size:2rem;font-weight:750;color:var(--accent)}.specs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.spec{padding:12px;background:var(--wash);border-radius:9px}.spec small{display:block;color:var(--muted)}.empty{color:var(--muted)}
+    footer{max-width:1080px;margin:8px auto 40px;padding:0 24px;color:var(--muted);font-size:.88rem}
+    @media(max-width:760px){main{grid-template-columns:1fr;margin:32px auto;gap:22px}header{padding:18px 24px}.card{padding:22px}}
+  </style>
+</head>
+<body>
+  <header><div class="brand">BOXWISE <span aria-hidden="true">/</span> WAREHOUSE TOOLS</div><a class="admin" href="/admin/">Admin</a></header>
+  <main>
+    <section>
+      <div class="eyebrow">Order packing assistant</div>
+      <h1>Recommend a shipping box</h1>
+      <p class="intro">Choose the products in the order and their shared quantity. Boxwise checks physical fit, product rotations, total weight, and box cost.</p>
+      <div class="card">
+        <h2>Order details</h2>
+        {% if messages %}{% for message in messages %}<div class="messages">{{ message }}</div>{% endfor %}{% endif %}
+        <form method="post">{% csrf_token %}
+          {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+          <div class="field"><label>{{ form.products.label }}</label><div class="helptext">{{ form.products.help_text }}</div><div class="options">{{ form.products }}</div>{{ form.products.errors }}</div>
+          <div class="field"><label for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>{{ form.quantity }}<div class="helptext">{{ form.quantity.help_text }}</div>{{ form.quantity.errors }}</div>
+          <button type="submit">Find the best box</button>
+        </form>
+      </div>
+    </section>
+    <aside class="card result" aria-live="polite">
+      {% if result %}
+        <div class="eyebrow">Recommendation for order #{{ order.pk }}</div><h2>{{ result.box.name }}</h2>
+        <div class="price">{{ result.box.cost }} <span style="font-size:.95rem">per box</span></div>
+        <div class="specs"><div class="spec"><small>Internal dimensions</small>{{ result.box.length_cm }} × {{ result.box.width_cm }} × {{ result.box.height_cm }} cm</div><div class="spec"><small>Order weight / limit</small>{{ result.total_weight_kg }} / {{ result.box.max_weight_kg }} kg</div></div>
+        <p>Lowest-cost available box that fits the selected products and stays within its weight capacity.</p>
+      {% elif order %}
+        <div class="eyebrow">Order #{{ order.pk }}</div><h2>No suitable box found</h2><p class="empty">The selected products do not fit any available box within its weight capacity. Review the product or box details in the admin.</p>
+      {% else %}
+        <div class="eyebrow">How it works</div><h2>Fit first, cost next</h2><p class="empty">Each product can rotate along its three axes. The system searches for a non-overlapping placement inside each box, filters out boxes that are too heavy, then chooses the lowest-cost eligible option.</p>
+      {% endif %}
+    </aside>
+  </main>
+  <footer>Dimensions are in centimeters, weights in kilograms, and cost in the currency used by your warehouse.</footer>
+</body>
+</html>
